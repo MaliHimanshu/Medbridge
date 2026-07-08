@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  DONOR
+  NGO
+  RECIPIENT
+}
+
+enum MedicineStatus {
+  AVAILABLE
+  LOW_STOCK
+  EXPIRED
+  DONATED
+}
+
+enum MedicineType {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  OINTMENT
+  DROPS
+  POWDER
+  OTHER
+}
+
+enum DonationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  phone       String?
+  address     String?
+
+  role        UserRole @default(DONOR)
+
+  medicines   Medicine[]
+
+  donationsGiven    Donation[] @relation("Donor")
+  donationsReceived Donation[] @relation("Receiver")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Medicine {
+  id               String @id @default(cuid())
+
+  name             String
+  genericName      String?
+  manufacturer     String
+  batchNumber      String @unique
+  category         String
+  type             MedicineType
+
+  description      String?
+
+  quantity         Int
+  minStock         Int @default(10)
+
+  unit             String
+
+  image            String?
+
+  manufactureDate  DateTime
+  expiryDate       DateTime
+
+  status           MedicineStatus @default(AVAILABLE)
+
+  ownerId          String
+  owner            User @relation(fields: [ownerId], references: [id])
+
+  donations        Donation[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Donation {
+  id          String @id @default(cuid())
+
+  medicineId  String
+  medicine    Medicine @relation(fields: [medicineId], references: [id])
+
+  donorId     String
+  donor       User @relation("Donor", fields: [donorId], references: [id])
+
+  receiverId  String
+  receiver    User @relation("Receiver", fields: [receiverId], references: [id])
+
+  quantity    Int
+
+  status      DonationStatus @default(PENDING)
+
+  message     String?
+
+  createdAt   DateTime @default(now())
+
+  updatedAt   DateTime @updatedAt
+}
